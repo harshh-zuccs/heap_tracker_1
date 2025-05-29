@@ -5,6 +5,9 @@
 
 #include <fstream>
 #include <string>
+#include <thread>
+#include <atomic>
+#include <array>  // Needed for offline_entries_ buffer
 
 #include "heap_tracker_observer_interface.h"
 
@@ -26,6 +29,10 @@ class HeapObserverTimeseriesFile final : public AbstractObserver {
   // Flush if 'offline_entries_' is full.
   void FlushIfFull();
 
+  // Periodic flushing support
+  void StartFlushThread();
+  void StopFlushThread();
+
  private:
   const HeapTrackOptions heap_track_options_;
   // Name of output file.
@@ -36,6 +43,10 @@ class HeapObserverTimeseriesFile final : public AbstractObserver {
   // Current number of entries in 'offline_entries_'.
   size_t size_{0};
   std::ofstream out_;
+
+  // Thread and control flag for periodic flushing
+  std::thread flush_thread_;
+  std::atomic<bool> stop_thread_{false};
 };
 
 ////////////////////////////////////////////////////////////////////////////////

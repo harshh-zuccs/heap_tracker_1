@@ -2,18 +2,25 @@
 
 #include "heap_tracker_observer_timeseries_file.h"
 
+#include <thread>
+#include <atomic>
+#include <chrono>
+
 HeapObserverTimeseriesFile::HeapObserverTimeseriesFile(
   HeapTrackOptions const heap_track_options, char const * const filename)
     : heap_track_options_{heap_track_options},
       filename_{filename},
-      out_{filename_, std::ofstream::out | std::ofstream::trunc} {
+      out_{filename_, std::ofstream::out | std::ofstream::trunc},
+      stop_thread_{false} {
   TRACE;
   assert(filename_);
+  StartFlushThread();  // Start background flushing
 }
 
 HeapObserverTimeseriesFile::~HeapObserverTimeseriesFile() {
   TRACE;
-  Flush();
+  StopFlushThread();   // Stop background flushing thread
+  Flush();             // Final flush before closing
   out_.close();
 
   char buffer[256] = {};
@@ -51,7 +58,6 @@ HeapObserverTimeseriesFile::Dump() const {}
 
 void
 HeapObserverTimeseriesFile::Reset() {
-  // Not sure what is the best thing to do here.
   assert(0);
 }
 
@@ -72,6 +78,24 @@ HeapObserverTimeseriesFile::FlushIfFull() {
   }
 }
 
+// ===== Periodic Flushing Thread =====
+
+void HeapObserverTimeseriesFile::StartFlushThread() {
+  flush_thread_ = std::thread([this]() {
+    while (!stop_thread_) {
+      std::this_thread::sleep_for(std::chrono::seconds(10));
+      Flush();
+    }
+  });
+}
+
+void HeapObserverTimeseriesFile::StopFlushThread() {
+  stop_thread_ = true;
+  if (flush_thread_.joinable()) {
+    flush_thread_.join();
+  }
+}
+
 #if 0
 void
 HeapObserverTimeseriesFile::OpenIfNot() {
@@ -85,5 +109,3 @@ HeapObserverTimeseriesFile::OpenIfNot() {
   }
 }
 #endif
-
-////////////////////////////////////////////////////////////////////////////////

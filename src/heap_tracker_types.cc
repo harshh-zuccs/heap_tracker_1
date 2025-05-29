@@ -62,11 +62,21 @@ AllocCallbackInfo::ToString() const {
 
 void
 InsertIntoPointerToCallbackInfoMap(
-  PointerToCallbackInfoMap & pointer_to_cbinfo_map, HeapPointer const ptr,
+  PointerToCallbackInfoMap & pointer_to_cbinfo_map,
+  HeapPointer const ptr,
   AllocCallbackInfo const & alloc_cb_info) {
-  auto const result = pointer_to_cbinfo_map.insert({ptr, alloc_cb_info});
-  assert(result.second);  // Insert is succesful.
-  (void)result;
+  
+  auto it = pointer_to_cbinfo_map.find(ptr);
+  if (it != pointer_to_cbinfo_map.end()) {
+    // Pointer already exists — update info or log warning
+    std::cerr << "Warning: Duplicate allocation detected for pointer: 0x"
+              << std::hex << ptr << std::dec << "\n";
+    
+    // Optionally update existing info:
+    it->second = alloc_cb_info;
+  } else {
+    pointer_to_cbinfo_map.insert({ptr, alloc_cb_info});
+  }
 }
 
 

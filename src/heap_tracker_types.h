@@ -35,7 +35,7 @@
 
 // We make an assumption on the maximum stack depth.
 // If this is not enough, then there would be an error message.
-enum { StackMaxDepth = 24 };
+enum { StackMaxDepth = 64 };
 
 typedef void const * HeapPointer;
 typedef size_t HeapSize;
